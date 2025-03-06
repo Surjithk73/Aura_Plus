@@ -10,51 +10,9 @@ import { elevenLabsService } from './services/elevenLabsService';
 import { DEFAULT_VOICE_ID } from './config/elevenlabs';
 import SessionHistory from './components/SessionHistory/SessionHistory';
 import EmergencyContacts from './components/EmergencyContacts';
-
-interface Conversation {
-  timestamp: string;
-  userMessage: string;
-  aiResponse: string;
-}
-
-interface ConversationSession {
-  $id: string;
-  sessionId: string;
-  startTime: string;
-  endTime: string;
-  conversation: Conversation[];
-  messageCount: number;
-}
-
-// Add fetch function for sessions
-const fetchSessions = async () => {
-  try {
-    const response = await fetch('http://localhost:8080/api/sessions/all');
-    if (!response.ok) {
-      throw new Error('Failed to fetch sessions');
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching sessions:', error);
-    return [];
-  }
-};
-
-// Add fetch function for individual session
-const fetchSessionById = async (sessionId: string) => {
-  try {
-    const response = await fetch(`http://localhost:8080/api/sessions/${sessionId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch session');
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching session:', error);
-    return null;
-  }
-};
+import { sessionService } from './services/sessionService';
+import { Conversation, ConversationSession } from './types/session';
+import ChatInterface from './components/ChatInterface';
 
 function AppContent() {
   const [isListening, setIsListening] = useState(false);
@@ -79,28 +37,41 @@ function AppContent() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [show3DModel, setShow3DModel] = useState(false);
   const [showEmergencyContacts, setShowEmergencyContacts] = useState(false);
+  const [showVoiceClone, setShowVoiceClone] = useState(false);
 
   const navigate = useNavigate();
 
-  // Add useEffect to fetch sessions when history is opened
+  // Initialize state from sessionService
   useEffect(() => {
-    if (showHistory) {
-      fetchSessions().then(data => {
-        setSessions(data);
-      });
-    }
-  }, [showHistory]);
+    const initializeState = async () => {
+      // Load sessions
+      const allSessions = await sessionService.getAllSessions();
+      setSessions(allSessions);
 
-  // Add useEffect to fetch session details when a session is selected
+      // Check if there's an active session
+      if (sessionService.isSessionStarted()) {
+        setSessionStarted(true);
+        const currentSession = sessionService.getCurrentSession();
+        setCurrentSession(currentSession);
+      }
+    };
+
+    initializeState();
+  }, []);
+
+  // Update session details when selected
   useEffect(() => {
-    if (selectedSession) {
-      fetchSessionById(selectedSession).then(data => {
+    const loadSessionDetails = async () => {
+      if (selectedSession) {
+        const data = await sessionService.getSessionById(selectedSession);
         if (data) {
           setSelectedSessionData(data);
           setShowSessionDetail(true);
         }
-      });
-    }
+      }
+    };
+
+    loadSessionDetails();
   }, [selectedSession]);
 
   const handleMicClick = async () => {
@@ -115,32 +86,25 @@ function AppContent() {
         if (aiResponse) {
           setResponse(aiResponse);
           
-          // Add to current session
           const newConversation = {
             userMessage: transcript,
             aiResponse: aiResponse,
             timestamp: new Date().toISOString()
           };
-          setCurrentSession(prev => [...prev, newConversation]);
           
-          // Save conversation using REST API
-          try {
-            await fetch('http://localhost:8080/api/sessions/current', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(newConversation),
-            });
-          } catch (error) {
-            console.error('Error saving conversation:', error);
-          }
+          // Update current session
+          const updatedSession = [...currentSession, newConversation];
+          setCurrentSession(updatedSession);
+          
+          // Save conversation using sessionService
+          await sessionService.saveConversation(newConversation);
+          
+          // Update sessions list
+          const updatedSessions = await sessionService.getAllSessions();
+          setSessions(updatedSessions);
 
           try {
-            // Use cloned voice ID or fall back to default female voice
             const voiceId = elevenLabsService.getVoiceId() ?? DEFAULT_VOICE_ID;
-            
-            // Generate speech using the selected voice
             const audioBuffer = await elevenLabsService.generateSpeech(aiResponse, true);
             const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
             const audio = new Audio(URL.createObjectURL(blob));
@@ -148,14 +112,13 @@ function AppContent() {
             
             audio.onended = () => {
               setAudioElements(prev => prev.filter(a => a !== audio));
-              URL.revokeObjectURL(audio.src); // Clean up the URL
+              URL.revokeObjectURL(audio.src);
             };
             
             await audio.play();
             aiIsSpeaking(aiResponse);
           } catch (error) {
             console.error('Error playing audio:', error);
-            // Still show the response even if audio fails
             aiIsSpeaking(aiResponse);
           }
         }
@@ -176,30 +139,32 @@ function AppContent() {
 
   const endSession = async () => {
     try {
-      // End the current session using REST API
-      await fetch('http://localhost:8080/api/sessions/current/end', {
-        method: 'POST',
+      await sessionService.endSession();
+      
+      // Update local state
+      setSessionStarted(false);
+      setCurrentSession([]);
+      
+      // Update sessions list
+      const updatedSessions = await sessionService.getAllSessions();
+      setSessions(updatedSessions);
+      
+      // Clean up UI state
+      if (typingInterval) {
+        clearInterval(typingInterval);
+        setTypingInterval(null);
+      }
+      audioElements.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
       });
+      setAudioElements([]);
+      setAiSpeaking(false);
+      setDisplayedResponse('');
+      setStatus('');
     } catch (error) {
       console.error('Error ending session:', error);
     }
-    
-    // Stop any ongoing typing animation
-    if (typingInterval) {
-      clearInterval(typingInterval);
-      setTypingInterval(null);
-    }
-    // Stop all playing audio elements
-    audioElements.forEach(audio => {
-      audio.pause();
-      audio.currentTime = 0;
-    });
-    setAudioElements([]);
-    setAiSpeaking(false);
-    setDisplayedResponse('');
-    setStatus('');
-    setCurrentSession([]);
-    setSessionStarted(false);
   };
 
   // Function to simulate AI speaking with typing animation
@@ -228,46 +193,36 @@ function AppContent() {
     setTypingInterval(interval);
   };
 
-  // Replace setupWebSocket with direct database interaction
   const beginSession = async () => {
     try {
-      // Start a new session using REST API
-      const response = await fetch('http://localhost:8080/api/sessions/start', {
-        method: 'POST',
-      });
+      const success = await sessionService.startSession();
       
-      if (!response.ok) {
-        throw new Error('Failed to start session');
-      }
-      
-      setSessionStarted(true);
-      setResponse('');
-      setDisplayedResponse('');
-      
-      const greeting = "Hello! How are you doing today?";
-      setResponse(greeting);
+      if (success) {
+        setSessionStarted(true);
+        setResponse('');
+        setDisplayedResponse('');
+        
+        const greeting = "Hello! How are you doing today?";
+        setResponse(greeting);
 
-      try {
-        // Use cloned voice ID or fall back to default female voice
-        const voiceId = elevenLabsService.getVoiceId() ?? DEFAULT_VOICE_ID;
-        
-        // Generate speech using the selected voice
-        const audioBuffer = await elevenLabsService.generateSpeech(greeting, true);
-        const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-        const audio = new Audio(URL.createObjectURL(blob));
-        setAudioElements(prev => [...prev, audio]);
-        
-        audio.onended = () => {
-          setAudioElements(prev => prev.filter(a => a !== audio));
-          URL.revokeObjectURL(audio.src); // Clean up the URL
-        };
-        
-        await audio.play();
-        aiIsSpeaking(greeting);
-      } catch (error) {
-        console.error('Error playing audio:', error);
-        // Still show the greeting even if audio fails
-        aiIsSpeaking(greeting);
+        try {
+          const voiceId = elevenLabsService.getVoiceId() ?? DEFAULT_VOICE_ID;
+          const audioBuffer = await elevenLabsService.generateSpeech(greeting, true);
+          const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+          const audio = new Audio(URL.createObjectURL(blob));
+          setAudioElements(prev => [...prev, audio]);
+          
+          audio.onended = () => {
+            setAudioElements(prev => prev.filter(a => a !== audio));
+            URL.revokeObjectURL(audio.src);
+          };
+          
+          await audio.play();
+          aiIsSpeaking(greeting);
+        } catch (error) {
+          console.error('Error playing audio:', error);
+          aiIsSpeaking(greeting);
+        }
       }
     } catch (error) {
       console.error('Error starting session:', error);
@@ -319,7 +274,7 @@ function AppContent() {
             </button>
             
             <button
-              onClick={() => setShowAnalysis(true)}
+              onClick={() => navigate('/analysis')}
               className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-green-500/10 group"
             >
               <div className="w-8 h-8 rounded-lg bg-green-500/20 group-hover:bg-green-500/30 flex items-center justify-center transition-colors">
@@ -377,105 +332,109 @@ function AppContent() {
         <span className="font-medium bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">3D Model</span>
       </button>
 
-      {/* Main content */}
-      <div className={`flex-1 flex flex-col items-center justify-center p-6 relative transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-72' : 'ml-0'}`}>
-        {/* Status indicator */}
-        {status && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="bg-gray-800 px-6 py-2 rounded-full shadow-lg border border-gray-700/50">
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  status === 'Listening...' ? 'bg-green-500 animate-pulse' : 
-                  status === 'Thinking...' ? 'bg-yellow-500 animate-pulse' : 
-                  'bg-blue-500 animate-pulse'
-                }`}></div>
-                <span className="text-white font-medium">{status}</span>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* AI Visualization */}
-        <div className="flex flex-col items-center mb-4">
-          <div className="relative w-40 h-40 rounded-full overflow-hidden shadow-lg shadow-blue-500/30">
-            <ModelViewer 
-              isListening={isListening} 
-              isProcessing={processing} 
-              hasResponse={aiSpeaking}
-            />
-          </div>
-          
-          {/* Begin Session Button - only shown initially */}
-          {!sessionStarted && (
-            <button
-              onClick={beginSession}
-              className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 shadow-blue-500/30"
-            >
-              Begin Session
-            </button>
-          )}
-        </div>
-
-        {/* AI Response Area */}
-        {sessionStarted && (
-          <div className="relative w-full mb-20">
-            <p className="text-white text-lg leading-relaxed text-center mx-auto max-w-2xl">
-              {displayedResponse || ''}
-            </p>
+      {/* Main Content */}
+      <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className="p-8">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-4xl font-bold text-white mb-8">AI Therapy Assistant</h1>
             
-            {/* Control buttons in curved layout */}
-            <div className="absolute -bottom-32 left-0 right-0 flex justify-center items-center">
-              <div className="flex items-center space-x-12 px-12 py-4 rounded-full bg-gray-800/30 backdrop-blur-sm">
-                <button
-                  onClick={handleMicClick}
-                  className={`p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
-                    aiSpeaking || processing
-                      ? 'bg-gray-600 cursor-not-allowed'
-                      : isListening
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-blue-500 hover:bg-blue-600'
-                  }`}
-                  disabled={aiSpeaking || processing}
-                >
-                  {isListening ? (
-                    <MicOff className="w-6 h-6 text-white" />
-                  ) : (
-                    <Mic className="w-6 h-6 text-white" />
-                  )}
-                </button>
-                
-                {/* End Session Button */}
-                <button
-                  onClick={endSession}
-                  className="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg transition-all duration-300 transform hover:scale-110"
-                  title="End Session"
-                >
-                  <X className="w-6 h-6 text-white" />
-                </button>
+            {/* Status indicator */}
+            {status && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="bg-gray-800 px-6 py-2 rounded-full shadow-lg border border-gray-700/50">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      status === 'Listening...' ? 'bg-green-500 animate-pulse' : 
+                      status === 'Thinking...' ? 'bg-yellow-500 animate-pulse' : 
+                      'bg-blue-500 animate-pulse'
+                    }`}></div>
+                    <span className="text-white font-medium">{status}</span>
+                  </div>
+                </div>
               </div>
+            )}
+            
+            {/* AI Visualization */}
+            <div className="flex flex-col items-center mb-4">
+              <div className="relative w-40 h-40 rounded-full overflow-hidden shadow-lg shadow-blue-500/30">
+                <ModelViewer 
+                  isListening={isListening} 
+                  isProcessing={processing} 
+                  hasResponse={aiSpeaking}
+                />
+              </div>
+              
+              {/* Begin Session Button - only shown initially */}
+              {!sessionStarted && (
+                <button
+                  onClick={beginSession}
+                  className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 shadow-blue-500/30"
+                >
+                  Begin Session
+                </button>
+              )}
             </div>
+
+            {/* AI Response Area */}
+            {sessionStarted && (
+              <div className="relative w-full mb-20">
+                <p className="text-white text-lg leading-relaxed text-center mx-auto max-w-2xl">
+                  {displayedResponse || ''}
+                </p>
+                
+                {/* Control buttons in curved layout */}
+                <div className="absolute -bottom-32 left-0 right-0 flex justify-center items-center">
+                  <div className="flex items-center space-x-12 px-12 py-4 rounded-full bg-gray-800/30 backdrop-blur-sm">
+                    <button
+                      onClick={handleMicClick}
+                      className={`p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
+                        aiSpeaking || processing
+                          ? 'bg-gray-600 cursor-not-allowed'
+                          : isListening
+                            ? 'bg-red-500 hover:bg-red-600'
+                            : 'bg-blue-500 hover:bg-blue-600'
+                      }`}
+                      disabled={aiSpeaking || processing}
+                    >
+                      {isListening ? (
+                        <MicOff className="w-6 h-6 text-white" />
+                      ) : (
+                        <Mic className="w-6 h-6 text-white" />
+                      )}
+                    </button>
+                    
+                    {/* End Session Button */}
+                    <button
+                      onClick={endSession}
+                      className="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg transition-all duration-300 transform hover:scale-110"
+                      title="End Session"
+                    >
+                      <X className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Session History Modal */}
+      {showHistory && (
+        <SessionHistory
+          sessions={sessions}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
 
       {/* Emergency Contacts Modal */}
       {showEmergencyContacts && (
         <EmergencyContacts onClose={() => setShowEmergencyContacts(false)} />
       )}
 
-      {/* Analysis Modal */}
-      {showAnalysis && (
-        <Analysis
-          onClose={() => setShowAnalysis(false)}
-          sessions={sessions}
-        />
-      )}
-
-      {showHistory && (
-        <SessionHistory
-          onClose={() => setShowHistory(false)}
-          sessions={sessions}
-        />
+      {/* Voice Clone Modal */}
+      {showVoiceClone && (
+        <VoiceClonePage onClose={() => setShowVoiceClone(false)} />
       )}
     </div>
   );
@@ -485,8 +444,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/voice-clone" element={<VoiceClonePage />} />
         <Route path="/" element={<AppContent />} />
+        <Route path="/voice-clone" element={<VoiceClonePage />} />
+        <Route path="/analysis" element={<Analysis />} />
       </Routes>
     </Router>
   );
