@@ -1,22 +1,25 @@
 // server.js
-const WebSocket = require('ws');
+const express = require('express');
+const cors = require('cors');
+const sessionRoutes = require('./routes/sessionRoutes');
+const setupWebSocket = require('./websocket/wsHandler');
 
-const wss = new WebSocket.Server({ port: 8080 });
+const app = express();
 
-wss.on('connection', (ws) => {
-  console.log('Client connected');
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-  ws.on('message', (message) => {
-    console.log('Received:', message);
-    
-    // Here you can process the message and generate a response
-    // For example, you can send back the same message
-    ws.send(`Server received: ${message}`);
-  });
+// Routes
+app.use('/api/sessions', sessionRoutes);
 
-  ws.on('close', () => {
-    console.log('Client disconnected');
-  });
+// Start server
+const PORT = 8080;
+const server = app.listen(PORT, () => {
+    console.log(`REST API server is running on http://localhost:${PORT}`);
 });
+
+// Setup WebSocket
+const wss = setupWebSocket(server);
 
 console.log('WebSocket server is running on ws://localhost:8080');
