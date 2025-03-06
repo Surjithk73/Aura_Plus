@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Mic, MicOff, Brain } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { useVoiceRecognition } from './hooks/useVoiceRecognition';
 import { useAI } from './hooks/useAI';
 import AudioUpload from './components/AudioUpload';
+import { ModelViewer } from '../ModelViewer';
 
 function App() {
   const [isListening, setIsListening] = useState(false);
@@ -86,7 +87,7 @@ function App() {
     setAiSpeaking(true);
     setDisplayedResponse(''); // Clear displayed response
 
-    let index = -1;
+    let index = -1; // Start from first character
     const typingInterval = setInterval(() => {
       if (index < text.length-1) {
         setDisplayedResponse((prev) => prev + text[index]);
@@ -95,7 +96,7 @@ function App() {
         clearInterval(typingInterval);
         setAiSpeaking(false);
       }
-    }, 60); // Adjust typing speed as needed
+    }, 40); // Slightly faster typing speed for better UX
   };
 
   return (
@@ -105,11 +106,12 @@ function App() {
         {/* AI Circle with Status Display */}
         <div className="flex flex-col items-center">
           <div className="text-white mb-2">{status || 'Ready'}</div>
-          <div className={`relative w-32 h-32 rounded-full bg-blue-500 flex items-center justify-center transition-all duration-300`}>
-            <Brain className="w-16 h-16 text-white" />
-            {processing && (
-              <div className="absolute inset-0 rounded-full border-4 border-blue-300 border-t-transparent animate-spin"></div>
-            )}
+          <div className="relative w-32 h-32 rounded-full overflow-hidden">
+            <ModelViewer 
+              isListening={isListening} 
+              isProcessing={processing} 
+              hasResponse={aiSpeaking}
+            />
           </div>
         </div>
 
