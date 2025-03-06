@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Mic, MicOff, History, X, Plus, BarChart, Mic as MicIcon } from 'lucide-react';
+import { Mic, MicOff, History, X, Plus, BarChart, Mic as MicIcon, ChevronLeft, ChevronRight, Box, Phone } from 'lucide-react';
 import { useVoiceRecognition } from './hooks/useVoiceRecognition';
 import { useAI } from './hooks/useAI';
 import { ModelViewer } from '../ModelViewer';
@@ -9,6 +9,7 @@ import VoiceClonePage from './pages/VoiceClonePage';
 import { elevenLabsService } from './services/elevenLabsService';
 import { DEFAULT_VOICE_ID } from './config/elevenlabs';
 import SessionHistory from './components/SessionHistory/SessionHistory';
+import EmergencyContacts from './components/EmergencyContacts';
 
 interface Conversation {
   timestamp: string;
@@ -75,6 +76,9 @@ function AppContent() {
   const [showSessionDetail, setShowSessionDetail] = useState(false);
   const [selectedSessionData, setSelectedSessionData] = useState<ConversationSession | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [show3DModel, setShow3DModel] = useState(false);
+  const [showEmergencyContacts, setShowEmergencyContacts] = useState(false);
 
   const navigate = useNavigate();
 
@@ -275,9 +279,9 @@ function AppContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="flex min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-72 bg-gray-800/95 backdrop-blur-lg text-white flex flex-col shadow-xl border-r border-gray-700/50">
+      <div className={`w-72 bg-gray-800/95 backdrop-blur-lg text-white flex flex-col shadow-xl border-r border-gray-700/50 transition-all duration-300 ease-in-out fixed h-full ${isSidebarOpen ? 'translate-x-0' : '-translate-x-72'}`}>
         {/* Logo */}
         <div className="p-6 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
@@ -323,6 +327,17 @@ function AppContent() {
               </div>
               <span className="font-medium">View Analysis</span>
             </button>
+
+            {/* Emergency Contacts Button */}
+            <button
+              onClick={() => setShowEmergencyContacts(true)}
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-red-500/10 group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-red-500/20 group-hover:bg-red-500/30 flex items-center justify-center transition-colors">
+                <Phone className="w-5 h-5 text-red-400 group-hover:text-red-300" />
+              </div>
+              <span className="font-medium">Emergency Contacts</span>
+            </button>
           </div>
         </nav>
 
@@ -335,9 +350,35 @@ function AppContent() {
           </div>
         </div> */}
       </div>
-      
+
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!isSidebarOpen)}
+        className="fixed left-72 top-6 z-50 p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-r-lg shadow-lg transition-all duration-300 ease-in-out"
+        style={{
+          transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-288px)'
+        }}
+      >
+        {isSidebarOpen ? (
+          <ChevronLeft className="w-5 h-5" />
+        ) : (
+          <ChevronRight className="w-5 h-5" />
+        )}
+      </button>
+
+      {/* 3D Model Toggle Button */}
+      <button
+        onClick={() => setShow3DModel(!show3DModel)}
+        className="fixed top-6 right-6 z-50 flex items-center space-x-2 px-4 py-2 bg-gray-800/90 hover:bg-gray-700/90 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-105 group"
+      >
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 group-hover:from-blue-500/30 group-hover:to-purple-500/30 flex items-center justify-center transition-colors">
+          <Box className="w-5 h-5 text-blue-400 group-hover:text-purple-400" />
+        </div>
+        <span className="font-medium bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">3D Model</span>
+      </button>
+
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+      <div className={`flex-1 flex flex-col items-center justify-center p-6 relative transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-72' : 'ml-0'}`}>
         {/* Status indicator */}
         {status && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
@@ -368,7 +409,7 @@ function AppContent() {
           {!sessionStarted && (
             <button
               onClick={beginSession}
-              className="mt-6 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
+              className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 shadow-blue-500/30"
             >
               Begin Session
             </button>
@@ -416,6 +457,11 @@ function AppContent() {
           </div>
         )}
       </div>
+
+      {/* Emergency Contacts Modal */}
+      {showEmergencyContacts && (
+        <EmergencyContacts onClose={() => setShowEmergencyContacts(false)} />
+      )}
 
       {/* Analysis Modal */}
       {showAnalysis && (
