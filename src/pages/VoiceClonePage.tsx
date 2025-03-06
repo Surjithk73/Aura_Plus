@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Mic, Upload, X, ArrowLeft, Check, AlertCircle, StopCircle } from 'lucide-react';
 import { elevenLabsService } from '../services/elevenLabsService';
 
-const VoiceClonePage = () => {
+interface VoiceClonePageProps {
+  onClose?: () => void;
+}
+
+const VoiceClonePage: React.FC<VoiceClonePageProps> = ({ onClose }) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>('');

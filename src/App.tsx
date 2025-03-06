@@ -487,7 +487,8 @@ function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/voice-clone" element={<VoiceClonePage />} />
-        <Route path="/" element={<AppContent />} />
+        <Route path="/analysis" element={<Analysis />} />
+        <Route path="/3d-model" element={<ThreeDModelPage />} />
       </Routes>
     </Router>
   );
