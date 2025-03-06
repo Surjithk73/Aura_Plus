@@ -1,10 +1,12 @@
 // server.js
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const sessionRoutes = require('./routes/sessionRoutes');
 const setupWebSocket = require('./websocket/wsHandler');
 
 const app = express();
+const port = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
@@ -14,12 +16,11 @@ app.use(express.json());
 app.use('/api/sessions', sessionRoutes);
 
 // Start server
-const PORT = 8080;
-const server = app.listen(PORT, () => {
-    console.log(`REST API server is running on http://localhost:${PORT}`);
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });
 
 // Setup WebSocket
-const wss = setupWebSocket(server);
+const wss = setupWebSocket(app);
 
 console.log('WebSocket server is running on ws://localhost:8080');

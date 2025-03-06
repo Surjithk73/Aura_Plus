@@ -11,6 +11,8 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "elevenlabs": "^1.52.0",
     "express": "^4.21.2",
     "node-appwrite": "^15.0.0",
     "ws": "^8.18.1"

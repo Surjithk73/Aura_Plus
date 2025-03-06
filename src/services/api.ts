@@ -77,4 +77,24 @@ export const sessionApi = {
       throw error;
     }
   },
+
+  analyze: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sessions/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to analyze sessions');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error analyzing sessions:', error);
+      throw error;
+    }
+  },
 }; 
