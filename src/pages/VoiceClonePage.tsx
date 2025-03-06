@@ -41,36 +41,40 @@ const VoiceClonePage: React.FC<VoiceClonePageProps> = ({ onClose }) => {
       return;
     }
 
+    // Check file size (max 10MB)
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
     setFile(selectedFile);
     setError('');
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const response = await fetch('http://localhost:8080/api/voice/clone', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to clone voice');
+      const voiceName = `voice_${new Date().toISOString()}`;
+      const voiceId = await elevenLabsService.createVoice(voiceName, [selectedFile], 
+        (status) => {
+          if (status.status === 'error') {
+            setError(status.message);
+          }
+        }
+      );
+      
+      if (!voiceId) {
+        throw new Error('No voice ID received from the server');
       }
 
-      const data = await response.json();
-      // Store the voice ID in localStorage
-      localStorage.setItem('voiceId', data.voice_id);
+      localStorage.setItem('voiceId', voiceId);
       setSuccess(true);
       
-      // Automatically return after successful cloning
       setTimeout(() => {
         handleVoiceCloned();
-      }, 1500); // Give user time to see success message
+      }, 1500);
 
     } catch (err) {
       console.error('Error cloning voice:', err);
-      setError('Failed to clone voice. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to clone voice. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -215,15 +219,49 @@ const VoiceClonePage: React.FC<VoiceClonePageProps> = ({ onClose }) => {
     draw();
   };
 
-  // Process recorded audio when recording stops
+  // Update the useEffect for processing recorded audio
   useEffect(() => {
-    if (audioChunks.length > 0 && !isRecording) {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-      const fileName = `recording_${new Date().toISOString().replace(/[:.]/g, '-')}.wav`;
-      const recordedFile = new File([audioBlob], fileName, { type: 'audio/wav' });
-      
-      setFile(recordedFile);
-    }
+    const processRecordedAudio = async () => {
+      if (audioChunks.length > 0 && !isRecording) {
+        try {
+          setUploading(true);
+          setError('');
+          
+          // Create audio file from chunks
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          const fileName = `recording_${new Date().toISOString().replace(/[:.]/g, '-')}.wav`;
+          const recordedFile = new File([audioBlob], fileName, { type: 'audio/wav' });
+          
+          const voiceName = `recording_${new Date().toISOString()}`;
+          const voiceId = await elevenLabsService.createVoice(voiceName, [recordedFile],
+            (status) => {
+              if (status.status === 'error') {
+                setError(status.message);
+              }
+            }
+          );
+          
+          if (!voiceId) {
+            throw new Error('No voice ID received from the server');
+          }
+
+          localStorage.setItem('voiceId', voiceId);
+          setSuccess(true);
+          
+          setTimeout(() => {
+            handleVoiceCloned();
+          }, 1500);
+        } catch (err) {
+          console.error('Error processing recording:', err);
+          const errorMessage = err instanceof Error ? err.message : 'Failed to process recording. Please try again.';
+          setError(errorMessage);
+        } finally {
+          setUploading(false);
+        }
+      }
+    };
+
+    processRecordedAudio();
   }, [audioChunks, isRecording]);
 
   const formatTime = (seconds: number) => {
@@ -252,53 +290,134 @@ const VoiceClonePage: React.FC<VoiceClonePageProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-6">
-      <div className="max-w-md mx-auto">
-        <div className="mb-8">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h2 className="text-xl font-semibold text-white">Voice Cloning</h2>
           <button
-            onClick={() => navigate('/')}
-            className="flex items-center text-gray-400 hover:text-white transition-colors"
+            onClick={onClose}
+            className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span>Back</span>
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
-          <h1 className="text-2xl font-bold mb-6">Voice Cloning</h1>
-          
-          <div className="space-y-4">
-            <label className="block">
-              <span className="text-gray-300">Upload Voice Sample</span>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleFileChange}
-                className="mt-1 block w-full text-sm text-gray-400
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-full file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-blue-50 file:text-blue-700
-                  hover:file:bg-blue-100"
-              />
-            </label>
+        {/* Content */}
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-medium text-white mb-2">Choose Your Method</h3>
+            <p className="text-gray-400">Select how you want to provide your voice sample</p>
+          </div>
 
-            {uploading && (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                <p className="mt-2 text-sm text-gray-400">Cloning voice...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Recording Option */}
+            <div className="bg-gray-700/50 rounded-lg p-6 hover:bg-gray-700/70 transition-colors">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Mic className="w-6 h-6 text-blue-400" />
+                </div>
+                <h4 className="text-white font-medium">Record Now</h4>
+                <p className="text-sm text-gray-400 mt-1">Record your voice directly</p>
               </div>
-            )}
 
+              {isRecording ? (
+                <div className="space-y-4">
+                  <canvas
+                    ref={canvasRef}
+                    className="w-full h-24 rounded-lg bg-gray-800"
+                    width={300}
+                    height={96}
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-white">{formatTime(recordingTime)}</span>
+                    <button
+                      onClick={stopRecording}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center space-x-2"
+                    >
+                      <StopCircle className="w-5 h-5" />
+                      <span>Stop Recording</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={startRecording}
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center space-x-2"
+                  disabled={uploading}
+                >
+                  <Mic className="w-5 h-5" />
+                  <span>Start Recording</span>
+                </button>
+              )}
+            </div>
+
+            {/* Upload Option */}
+            <div className="bg-gray-700/50 rounded-lg p-6 hover:bg-gray-700/70 transition-colors">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Upload className="w-6 h-6 text-purple-400" />
+                </div>
+                <h4 className="text-white font-medium">Upload Audio</h4>
+                <p className="text-sm text-gray-400 mt-1">Upload an existing recording</p>
+              </div>
+
+              <div
+                className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+              >
+                {file ? (
+                  <div className="space-y-2">
+                    <p className="text-white">{file.name}</p>
+                    <button
+                      onClick={removeFile}
+                      className="text-red-400 hover:text-red-300 text-sm"
+                    >
+                      Remove file
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-400 mb-2">Drag & drop your audio file here</p>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg inline-flex items-center space-x-2"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span>Choose File</span>
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="audio/mpeg,audio/wav,audio/x-m4a,audio/m4a"
+                      className="hidden"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Status Messages */}
+          <div className="mt-6">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400">
-                {error}
+              <div className="bg-red-500/10 text-red-400 p-4 rounded-lg flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5" />
+                <span>{error}</span>
               </div>
             )}
-
             {success && (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-green-400">
-                Voice cloned successfully! Redirecting...
+              <div className="bg-green-500/10 text-green-400 p-4 rounded-lg flex items-center space-x-2">
+                <Check className="w-5 h-5" />
+                <span>Voice cloned successfully!</span>
+              </div>
+            )}
+            {uploading && (
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                <p className="mt-2">Processing your voice...</p>
               </div>
             )}
           </div>

@@ -118,6 +118,17 @@ function AppContent() {
     loadSessionDetails();
   }, [selectedSession]);
 
+  useEffect(() => {
+    const loadSessions = async () => {
+      const allSessions = await sessionService.getAllSessions();
+      if (allSessions) {
+        setSessions(allSessions);
+      }
+    };
+
+    loadSessions();
+  }, []);
+
   const handleMicClick = async () => {
     if (isListening) {
       stopListening();
@@ -273,10 +284,6 @@ function AppContent() {
     }
   };
 
-  const goToVoiceClone = () => {
-    navigate('/voice-clone');
-  };
-
   const goToThreeDModel = () => {
     navigate('/3d-model');
   };
@@ -302,7 +309,7 @@ function AppContent() {
         <nav className="flex-1 p-4">
           <div className="space-y-2">
             <button
-              onClick={goToVoiceClone}
+              onClick={() => setShowVoiceClone(true)}
               className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-blue-500/10 group"
             >
               <div className="w-8 h-8 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 flex items-center justify-center transition-colors">
@@ -312,7 +319,7 @@ function AppContent() {
             </button>
             
             <button 
-              onClick={() => setShowHistory(!showHistory)}
+              onClick={() => navigate('/session-history')}
               className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-purple-500/10 group"
             >
               <div className="w-8 h-8 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 flex items-center justify-center transition-colors">
@@ -329,6 +336,17 @@ function AppContent() {
                 <BarChart className="w-5 h-5 text-green-400 group-hover:text-green-300" />
               </div>
               <span className="font-medium">View Analysis</span>
+            </button>
+
+            {/* Emergency Contacts Button */}
+            <button
+              onClick={() => setShowEmergencyContacts(true)}
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-red-500/10 group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-red-500/20 group-hover:bg-red-500/30 flex items-center justify-center transition-colors">
+                <Phone className="w-5 h-5 text-red-400 group-hover:text-red-300" />
+              </div>
+              <span className="font-medium">Emergency Contacts</span>
             </button>
           </div>
         </nav>
@@ -463,7 +481,7 @@ function AppContent() {
       {/* Add 3D Model button next to Voice Clone button */}
       <div className="fixed top-6 right-6 flex space-x-4">
         <button
-          onClick={goToVoiceClone}
+          onClick={() => setShowVoiceClone(true)}
           className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
         >
           <Mic className="w-5 h-5 mr-2" />
@@ -486,9 +504,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<AppContent />} />
-        <Route path="/voice-clone" element={<VoiceClonePage />} />
         <Route path="/analysis" element={<Analysis />} />
         <Route path="/3d-model" element={<ThreeDModelPage />} />
+        <Route path="/session-history" element={<SessionHistory />} />
       </Routes>
     </Router>
   );
