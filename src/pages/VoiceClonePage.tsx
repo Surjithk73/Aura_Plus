@@ -5,9 +5,8 @@ import { elevenLabsService } from '../services/elevenLabsService';
 
 const VoiceClonePage = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -26,18 +25,50 @@ const VoiceClonePage = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== 'audio/mpeg' && 
-          selectedFile.type !== 'audio/wav' && 
-          selectedFile.type !== 'audio/x-m4a' &&
-          selectedFile.type !== 'audio/m4a') {
-        setError('Please upload an MP3, WAV, or M4A file');
-        return;
+    if (!selectedFile) return;
+
+    if (selectedFile.type !== 'audio/mpeg' && 
+        selectedFile.type !== 'audio/wav' && 
+        selectedFile.type !== 'audio/x-m4a' &&
+        selectedFile.type !== 'audio/m4a') {
+      setError('Please upload an MP3, WAV, or M4A file');
+      return;
+    }
+
+    setFile(selectedFile);
+    setError('');
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch('http://localhost:8080/api/voice/clone', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clone voice');
       }
-      setFile(selectedFile);
-      setError(null);
+
+      const data = await response.json();
+      // Store the voice ID in localStorage
+      localStorage.setItem('voiceId', data.voice_id);
+      setSuccess(true);
+      
+      // Automatically return after successful cloning
+      setTimeout(() => {
+        handleVoiceCloned();
+      }, 1500); // Give user time to see success message
+
+    } catch (err) {
+      console.error('Error cloning voice:', err);
+      setError('Failed to clone voice. Please try again.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -53,7 +84,7 @@ const VoiceClonePage = () => {
         return;
       }
       setFile(droppedFile);
-      setError(null);
+      setError('');
     }
   };
 
@@ -63,7 +94,7 @@ const VoiceClonePage = () => {
 
   const startRecording = async () => {
     try {
-      setError(null);
+      setError('');
       setAudioChunks([]);
       setRecordingTime(0);
       
@@ -197,230 +228,77 @@ const VoiceClonePage = () => {
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
-
-    setIsUploading(true);
-    setError(null);
-    setUploadProgress(0);
-
-    try {
-      await elevenLabsService.createVoice('Therapy Assistant', [file]);
-      setSuccess(true);
-      setUploadProgress(100);
-      
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-    } catch (error) {
-      setError('Failed to clone voice. Please try again.');
-      setUploadProgress(0);
-    } finally {
-      setIsUploading(false);
+  // After successful voice cloning
+  const handleVoiceCloned = () => {
+    const returnTo = localStorage.getItem('returnTo');
+    if (returnTo) {
+      navigate(returnTo);
+    } else {
+      navigate('/');
     }
   };
 
   const removeFile = () => {
     setFile(null);
-    setError(null);
+    setError('');
     setSuccess(false);
-    setUploadProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-6">
+      <div className="max-w-md mx-auto">
+        <div className="mb-8">
           <button
             onClick={() => navigate('/')}
             className="flex items-center text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            <span>Back to Chat</span>
+            <span>Back</span>
           </button>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-            Create Your Personal AI Voice
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Transform your therapy experience with a voice that feels natural and personal
-          </p>
-        </div>
-
-        {/* Voice Recording Instructions */}
-        <div className="bg-gray-800/50 rounded-xl p-8 mb-8 backdrop-blur-sm">
-          <h2 className="text-2xl font-semibold mb-6">Recording Guidelines</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-sm">1</span>
-                </div>
-                <p className="text-gray-300">Find a quiet room with minimal background noise</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-sm">2</span>
-                </div>
-                <p className="text-gray-300">Speak naturally and clearly for 30-60 seconds</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-sm">3</span>
-                </div>
-                <p className="text-gray-300">Use MP3, WAV, or M4A format for best quality</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-sm">4</span>
-                </div>
-                <p className="text-gray-300">Maintain consistent volume and pace</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recording Section */}
-        {isRecording && (
-          <div className="bg-gray-800/70 rounded-xl p-6 mb-8 backdrop-blur-sm">
-            <div className="flex flex-col items-center space-y-4">
-              <h3 className="text-xl font-semibold text-red-400">Recording in Progress</h3>
-              
-              <div className="w-full h-24 mb-2">
-                <canvas 
-                  ref={canvasRef} 
-                  className="w-full h-full rounded-lg bg-gray-900"
-                  width="600"
-                  height="100"
-                />
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="animate-pulse w-3 h-3 rounded-full bg-red-500"></div>
-                <span className="text-xl font-mono">{formatTime(recordingTime)}</span>
-                
-                <button
-                  onClick={stopRecording}
-                  className="ml-4 px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center space-x-2 transition-colors"
-                >
-                  <StopCircle className="w-5 h-5 text-red-400" />
-                  <span>Stop Recording</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Upload Area */}
-        <div 
-          className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
-            file ? 'border-green-500 bg-green-500/10' : 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/5'
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-        >
-          {!file ? (
-            <>
+        <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
+          <h1 className="text-2xl font-bold mb-6">Voice Cloning</h1>
+          
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-gray-300">Upload Voice Sample</span>
               <input
                 type="file"
-                accept=".mp3,.wav,.m4a"
+                accept="audio/*"
                 onChange={handleFileChange}
-                className="hidden"
-                ref={fileInputRef}
+                className="mt-1 block w-full text-sm text-gray-400
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
               />
-              <div className="space-y-4">
-                <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto">
-                  <Upload className="w-8 h-8 text-blue-400" />
-                </div>
-                <h3 className="text-xl font-semibold">Choose your voice sample</h3>
-                <p className="text-gray-400 mb-4">Upload an audio file or record directly</p>
-                
-                <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full sm:w-auto px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Upload className="w-5 h-5" />
-                    <span>Upload File</span>
-                  </button>
-                  
-                  {!isRecording && (
-                    <button
-                      onClick={startRecording}
-                      className="w-full sm:w-auto px-6 py-3 bg-red-500 hover:bg-red-600 rounded-lg transition-colors flex items-center justify-center space-x-2"
-                      disabled={isRecording}
-                    >
-                      <Mic className="w-5 h-5" />
-                      <span>Record Now</span>
-                    </button>
-                  )}
-                </div>
+            </label>
+
+            {uploading && (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-400">Cloning voice...</p>
               </div>
-            </>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center justify-center space-x-4">
-                <Mic className="w-8 h-8 text-green-400" />
-                <span className="text-lg font-medium">{file.name}</span>
-                <button
-                  onClick={removeFile}
-                  className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-red-400" />
-                </button>
+            )}
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400">
+                {error}
               </div>
-              
-              {!isUploading && !success && (
-                <button
-                  onClick={handleUpload}
-                  className="px-8 py-3 bg-green-500 hover:bg-green-600 rounded-lg transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Upload className="w-5 h-5" />
-                  <span>Start Voice Cloning</span>
-                </button>
-              )}
+            )}
 
-              {isUploading && (
-                <div className="space-y-4">
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-blue-400">Creating your AI voice...</p>
-                </div>
-              )}
-
-              {success && (
-                <div className="flex items-center justify-center space-x-2 text-green-400">
-                  <Check className="w-5 h-5" />
-                  <span>Voice cloned successfully! Redirecting...</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mt-4 p-4 bg-red-500/20 border border-red-500 rounded-lg flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <p className="text-red-400">{error}</p>
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-green-400">
+                Voice cloned successfully! Redirecting...
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
