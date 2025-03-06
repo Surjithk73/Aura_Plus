@@ -291,7 +291,11 @@ function AppContent() {
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
       {/* Sidebar */}
-      <div className="w-72 bg-gray-800/95 backdrop-blur-lg text-white flex flex-col shadow-xl border-r border-gray-700/50">
+      <div 
+        className={`fixed top-0 left-0 h-full w-72 bg-gray-800/95 backdrop-blur-lg text-white flex flex-col shadow-xl border-r border-gray-700/50 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* Logo */}
         <div className="p-6 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
@@ -364,10 +368,9 @@ function AppContent() {
       {/* Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!isSidebarOpen)}
-        className="fixed left-72 top-6 z-50 p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-r-lg shadow-lg transition-all duration-300 ease-in-out"
-        style={{
-          transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-288px)'
-        }}
+        className={`fixed top-6 z-50 p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'left-72' : 'left-0'
+        }`}
       >
         {isSidebarOpen ? (
           <ChevronLeft className="w-5 h-5" />
@@ -388,7 +391,9 @@ function AppContent() {
       </button>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col items-center justify-center p-6 relative transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-72' : 'ml-0'}`}>
+      <div className={`flex-1 flex flex-col items-center justify-center p-6 relative transition-all duration-300 ease-in-out ${
+        isSidebarOpen ? 'ml-72' : 'ml-0'
+      }`}>
         {/* Status indicator */}
         {status && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
