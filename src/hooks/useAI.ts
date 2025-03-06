@@ -48,7 +48,7 @@ export function useAI() {
 - Values clarification to align actions with personal meaning
 - Strengths-based approaches that build on existing resources
 - Behavioral activation for depression and low motivation
-- Emotion regulation strategies for intense feelz
+- Emotion regulation strategies for intense feelings
 - Problem-solving frameworks for navigating challenges
 
 ## Response Format:
