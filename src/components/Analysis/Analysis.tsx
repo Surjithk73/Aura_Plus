@@ -28,7 +28,7 @@ interface AnalysisProps {
 }
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI('AIzaSyCT43QYBuN8a4dA8Pq6i9wxXmgHPPnO8a0');
 
 interface AIAnalysis {
   insights: string[];

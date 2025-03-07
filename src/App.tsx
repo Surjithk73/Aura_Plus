@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Mic, MicOff, History, X, Plus, BarChart, Mic as MicIcon, ChevronLeft, ChevronRight, Box, Phone } from 'lucide-react';
+import { Mic, MicOff, History, X, Plus, BarChart, Mic as MicIcon, ChevronLeft, ChevronRight, Box, Phone, Upload } from 'lucide-react';
 import { useVoiceRecognition } from './hooks/useVoiceRecognition';
 import { useAI } from './hooks/useAI';
 import { ModelViewer } from '../ModelViewer';
@@ -12,6 +12,7 @@ import { DEFAULT_VOICE_ID } from './config/elevenlabs';
 import SessionHistory from './components/SessionHistory/SessionHistory';
 import EmergencyContacts from './components/EmergencyContacts';
 import { sessionService } from './services/sessionService';
+import AvatarUpload from './components/AvatarUpload';
 
 // Types
 interface Conversation {
@@ -82,6 +83,7 @@ function AppContent() {
   const [show3DModel, setShow3DModel] = useState(false);
   const [showEmergencyContacts, setShowEmergencyContacts] = useState(false);
   const [showVoiceClone, setShowVoiceClone] = useState(false);
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
 
   const navigate = useNavigate();
 
@@ -352,6 +354,17 @@ function AppContent() {
               </div>
               <span className="font-medium">Emergency Contacts</span>
             </button>
+
+            {/* Add Avatar Button */}
+            <button
+              onClick={() => setShowAvatarUpload(true)}
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-blue-500/10 group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 flex items-center justify-center transition-colors">
+                <Upload className="w-5 h-5 text-blue-400 group-hover:text-blue-300" />
+              </div>
+              <span className="font-medium">Add Avatar</span>
+            </button>
           </div>
         </nav>
       </div>
@@ -372,7 +385,7 @@ function AppContent() {
 
       {/* 3D Model Toggle Button */}
       <button
-        onClick={() => setShow3DModel(!show3DModel)}
+        onClick={goToThreeDModel}
         className="fixed top-6 right-6 z-50 flex items-center space-x-2 px-4 py-2 bg-[#12121A]/90 hover:bg-[#1A1A23]/90 text-white rounded-lg shadow-xl shadow-black/20 transition-all duration-200 hover:scale-105 group"
       >
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/10 group-hover:from-indigo-500/20 group-hover:to-violet-500/20 flex items-center justify-center transition-colors">
@@ -472,6 +485,11 @@ function AppContent() {
       {/* Voice Clone Modal */}
       {showVoiceClone && (
         <VoiceClonePage onClose={() => setShowVoiceClone(false)} />
+      )}
+
+      {/* Avatar Upload Modal */}
+      {showAvatarUpload && (
+        <AvatarUpload onClose={() => setShowAvatarUpload(false)} />
       )}
     </div>
   );
