@@ -289,21 +289,21 @@ function AppContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#0A0A0F] to-[#1A1A23]">
       {/* Sidebar */}
       <div 
-        className={`fixed top-0 left-0 h-full w-72 bg-gray-800/95 backdrop-blur-lg text-white flex flex-col shadow-xl border-r border-gray-700/50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-72 bg-[#12121A]/95 backdrop-blur-lg text-white flex flex-col shadow-2xl border-r border-[#2A2A35]/20 transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-gray-700/50">
+        <div className="p-6 border-b border-[#2A2A35]/20">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Plus className="w-6 h-6 text-white" />
             </div>
             <div>
-              <span className="text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">Aura +</span>
+              <span className="text-xl font-semibold bg-gradient-to-r from-indigo-400 to-violet-400 text-transparent bg-clip-text">Aura +</span>
               <p className="text-xs text-gray-400">Your Personal Therapy Companion</p>
             </div>
           </div>
@@ -314,30 +314,30 @@ function AppContent() {
           <div className="space-y-2">
             <button
               onClick={() => setShowVoiceClone(true)}
-              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-blue-500/10 group"
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-indigo-500/10 group"
             >
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 flex items-center justify-center transition-colors">
-                <MicIcon className="w-5 h-5 text-blue-400 group-hover:text-blue-300" />
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
+                <MicIcon className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
               </div>
               <span className="font-medium">Voice Clone</span>
             </button>
             
             <button 
               onClick={() => navigate('/session-history')}
-              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-purple-500/10 group"
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-violet-500/10 group"
             >
-              <div className="w-8 h-8 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 flex items-center justify-center transition-colors">
-                <History className="w-5 h-5 text-purple-400 group-hover:text-purple-300" />
+              <div className="w-8 h-8 rounded-lg bg-violet-500/10 group-hover:bg-violet-500/20 flex items-center justify-center transition-colors">
+                <History className="w-5 h-5 text-violet-400 group-hover:text-violet-300" />
               </div>
               <span className="font-medium">Session History</span>
             </button>
             
             <button
               onClick={() => navigate('/analysis')}
-              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-green-500/10 group"
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-emerald-500/10 group"
             >
-              <div className="w-8 h-8 rounded-lg bg-green-500/20 group-hover:bg-green-500/30 flex items-center justify-center transition-colors">
-                <BarChart className="w-5 h-5 text-green-400 group-hover:text-green-300" />
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
+                <BarChart className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300" />
               </div>
               <span className="font-medium">View Analysis</span>
             </button>
@@ -345,30 +345,21 @@ function AppContent() {
             {/* Emergency Contacts Button */}
             <button
               onClick={() => setShowEmergencyContacts(true)}
-              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-red-500/10 group"
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white rounded-lg transition-all duration-200 hover:bg-rose-500/10 group"
             >
-              <div className="w-8 h-8 rounded-lg bg-red-500/20 group-hover:bg-red-500/30 flex items-center justify-center transition-colors">
-                <Phone className="w-5 h-5 text-red-400 group-hover:text-red-300" />
+              <div className="w-8 h-8 rounded-lg bg-rose-500/10 group-hover:bg-rose-500/20 flex items-center justify-center transition-colors">
+                <Phone className="w-5 h-5 text-rose-400 group-hover:text-rose-300" />
               </div>
               <span className="font-medium">Emergency Contacts</span>
             </button>
           </div>
         </nav>
-
-        {/* Footer
-        <div className="p-4 border-t border-gray-700/50">
-          <div className="px-3 py-2 rounded-lg bg-gray-700/30">
-            <p className="text-xs text-gray-400 text-center">
-              AI Assistant v1.0
-            </p>
-          </div>
-        </div> */}
       </div>
 
       {/* Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-6 z-50 p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
+        className={`fixed top-6 z-50 p-2 bg-[#12121A] hover:bg-[#1A1A23] text-white rounded-lg shadow-xl shadow-black/20 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'left-72' : 'left-0'
         }`}
       >
@@ -382,12 +373,12 @@ function AppContent() {
       {/* 3D Model Toggle Button */}
       <button
         onClick={() => setShow3DModel(!show3DModel)}
-        className="fixed top-6 right-6 z-50 flex items-center space-x-2 px-4 py-2 bg-gray-800/90 hover:bg-gray-700/90 text-white rounded-lg shadow-lg transition-all duration-200 hover:scale-105 group"
+        className="fixed top-6 right-6 z-50 flex items-center space-x-2 px-4 py-2 bg-[#12121A]/90 hover:bg-[#1A1A23]/90 text-white rounded-lg shadow-xl shadow-black/20 transition-all duration-200 hover:scale-105 group"
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 group-hover:from-blue-500/30 group-hover:to-purple-500/30 flex items-center justify-center transition-colors">
-          <Box className="w-5 h-5 text-blue-400 group-hover:text-purple-400" />
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/10 group-hover:from-indigo-500/20 group-hover:to-violet-500/20 flex items-center justify-center transition-colors">
+          <Box className="w-5 h-5 text-indigo-400 group-hover:text-violet-400" />
         </div>
-        <span className="font-medium bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">3D Model</span>
+        <span className="font-medium bg-gradient-to-r from-indigo-400 to-violet-400 text-transparent bg-clip-text">3D Model</span>
       </button>
 
       {/* Main content */}
@@ -397,12 +388,12 @@ function AppContent() {
         {/* Status indicator */}
         {status && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="bg-gray-800 px-6 py-2 rounded-full shadow-lg border border-gray-700/50">
+            <div className="bg-[#12121A] px-6 py-2 rounded-full shadow-xl shadow-black/20 border border-[#2A2A35]/20">
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  status === 'Listening...' ? 'bg-green-500 animate-pulse' : 
-                  status === 'Thinking...' ? 'bg-yellow-500 animate-pulse' : 
-                  'bg-blue-500 animate-pulse'
+                  status === 'Listening...' ? 'bg-emerald-500 animate-pulse' : 
+                  status === 'Thinking...' ? 'bg-amber-500 animate-pulse' : 
+                  'bg-indigo-500 animate-pulse'
                 }`}></div>
                 <span className="text-white font-medium">{status}</span>
               </div>
@@ -412,7 +403,7 @@ function AppContent() {
         
         {/* AI Visualization */}
         <div className="flex flex-col items-center mb-4">
-          <div className="relative w-40 h-40 rounded-full overflow-hidden shadow-lg shadow-blue-500/30">
+          <div className="relative w-40 h-40 rounded-full overflow-hidden shadow-2xl shadow-indigo-500/20">
             <ModelViewer 
               isListening={isListening} 
               isProcessing={processing} 
@@ -424,7 +415,7 @@ function AppContent() {
           {!sessionStarted && (
             <button
               onClick={beginSession}
-              className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 shadow-blue-500/30"
+              className="mt-6 px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-full shadow-xl shadow-indigo-500/20 transition-all duration-300 transform hover:scale-105"
             >
               Begin Session
             </button>
@@ -440,15 +431,15 @@ function AppContent() {
             
             {/* Control buttons in curved layout */}
             <div className="absolute -bottom-32 left-0 right-0 flex justify-center items-center">
-              <div className="flex items-center space-x-12 px-12 py-4 rounded-full bg-gray-800/30 backdrop-blur-sm">
+              <div className="flex items-center space-x-12 px-12 py-4 rounded-full bg-[#12121A]/30 backdrop-blur-sm shadow-xl shadow-black/20">
                 <button
                   onClick={handleMicClick}
-                  className={`p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
+                  className={`p-4 rounded-full shadow-xl transition-all duration-300 transform hover:scale-110 ${
                     aiSpeaking || processing
                       ? 'bg-gray-600 cursor-not-allowed'
                       : isListening
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-blue-500 hover:bg-blue-600'
+                        ? 'bg-rose-500 hover:bg-rose-600'
+                        : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'
                   }`}
                   disabled={aiSpeaking || processing}
                 >
@@ -462,7 +453,7 @@ function AppContent() {
                 {/* End Session Button */}
                 <button
                   onClick={endSession}
-                  className="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg transition-all duration-300 transform hover:scale-110"
+                  className="p-4 rounded-full bg-rose-500 hover:bg-rose-600 shadow-xl transition-all duration-300 transform hover:scale-110"
                   title="End Session"
                 >
                   <X className="w-6 h-6 text-white" />
@@ -482,24 +473,6 @@ function AppContent() {
       {showVoiceClone && (
         <VoiceClonePage onClose={() => setShowVoiceClone(false)} />
       )}
-
-      {/* Add 3D Model button next to Voice Clone button */}
-      <div className="fixed top-6 right-6 flex space-x-4">
-        <button
-          onClick={() => setShowVoiceClone(true)}
-          className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
-        >
-          <Mic className="w-5 h-5 mr-2" />
-          <span>Voice Clone</span>
-        </button>
-        <button
-          onClick={goToThreeDModel}
-          className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          <Box className="w-5 h-5 mr-2" />
-          <span>3D Model</span>
-        </button>
-      </div>
     </div>
   );
 }
