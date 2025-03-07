@@ -315,8 +315,9 @@ const ThreeDModelPage = () => {
         
         // Position the model for VR
         if (isVRMode) {
-          gltf.scene.position.set(0, 1.6, -2); // Place model at eye level, 2 meters away
-          gltf.scene.scale.setScalar(1.5); // Slightly larger in VR
+          gltf.scene.position.set(0, 1.5, -1.5); // Adjusted height and distance
+          gltf.scene.rotation.set(0, Math.PI, 0); // Rotate 180 degrees to face user
+          gltf.scene.scale.setScalar(1.2); // Slightly larger in VR
         } else {
           gltf.scene.position.set(0, 0, 0);
           const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -620,6 +621,63 @@ const ThreeDModelPage = () => {
   const toggleVRMode = () => {
     setIsVRMode(!isVRMode);
   };
+
+  useEffect(() => {
+    if (!isVRMode) return;
+
+    const continuousSpeech = async () => {
+      if (!isSessionActive) return;
+      
+      try {
+        const response = await generateResponse([...messages, { role: 'user', content: 'Please continue our conversation naturally.' }]);
+        if (response) {
+          const audioBlob = await elevenLabsService.textToSpeech(response, DEFAULT_VOICE_ID);
+          const audio = new Audio(URL.createObjectURL(audioBlob));
+          
+          setAudioElements(prev => [...prev, audio]);
+          
+          audio.onplay = () => {
+            setIsSpeaking(true);
+            if (morphTargetMeshRef.current?.morphTargetInfluences) {
+              morphTargetMeshRef.current.morphTargetInfluences.fill(0);
+            }
+          };
+          
+          audio.onended = () => {
+            setIsSpeaking(false);
+            if (morphTargetMeshRef.current?.morphTargetInfluences) {
+              morphTargetMeshRef.current.morphTargetInfluences.fill(0);
+            }
+            setAudioElements(prev => prev.filter(a => a !== audio));
+            URL.revokeObjectURL(audio.src);
+            
+            // Continue speaking after a short pause
+            setTimeout(continuousSpeech, 2000);
+          };
+          
+          await audio.play();
+        }
+      } catch (error) {
+        console.error('Error in continuous speech:', error);
+        // Retry after error
+        setTimeout(continuousSpeech, 5000);
+      }
+    };
+
+    if (isSessionActive) {
+      continuousSpeech();
+    }
+
+    return () => {
+      audioElements.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+        if (audio.src) {
+          URL.revokeObjectURL(audio.src);
+        }
+      });
+    };
+  }, [isVRMode, isSessionActive]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
