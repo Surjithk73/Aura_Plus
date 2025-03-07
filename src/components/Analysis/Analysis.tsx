@@ -185,7 +185,7 @@ const Analysis: React.FC<AnalysisProps> = ({ sessions: propSessions }) => {
       console.log('Starting AI analysis with sessions:', sessionsData.length);
       
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.0-pro",
+        model: "gemini-2.0-flash",
         generationConfig: {
           temperature: 0.3, // Lower temperature for more consistent results
           topK: 20,
@@ -597,7 +597,7 @@ const Analysis: React.FC<AnalysisProps> = ({ sessions: propSessions }) => {
                 <div className="absolute top-0 left-0 w-4 h-4 rounded-full bg-indigo-500"></div>
               </div>
             </div>
-            <p className="text-white font-medium">Analyzing session data with Gemini AI...</p>
+            <p className="text-white font-medium">Analyzing sessions data with AI...</p>
           </div>
         </div>
       ) : (
